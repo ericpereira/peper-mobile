@@ -10,43 +10,115 @@ import {
   Keyboard,
   Alert
 } from 'react-native'
-import * as Location from 'expo-location';
+import * as Location from 'expo-location'
+
+//para converter a data de utc para pt-br
+import moment from 'moment'
+import 'moment/locale/pt-br'
 
 import { RectButton } from 'react-native-gesture-handler'
 import { MaterialIcons as Icon } from '@expo/vector-icons'
 import { TextInputMask } from 'react-native-masked-text'
 import { useNavigation } from '@react-navigation/native' //para navegar através do botão
 
+import axios from 'axios' //para fazer a chamada assincrona da previsão do tempo
+
 const width = Dimensions.get('window').width
 
+//transformar a primeira letra em maiscula
+const capitalize = (s) => {
+  if (typeof s !== 'string') return ''
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+interface Climate {
+  day: string,
+  temperature: number,
+  hour: number
+}
+
 const Home = () => {
+  //dados do clima
+  const [days, setDays] = useState<Climate[]>()
+
   //dados da localização do usuário
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
 
   const [chiliValue, setChiliValue] = useState<string>('200,99')
   const [weight, setWeight] = useState<string>('0,00')
+
+  //posição inicial
+  const [initialPosition, setInitialPosition] = useState<[number, number]>([0, 0])
+
+  const api = axios.create({
+      baseURL: 'http://192.168.1.9:3333'
+  })
   
   const navigation = useNavigation()
 
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
-      }
+  async function loadPosition() {
+    //verifica se deu permissão ou não
+    const { status } = await Location.requestPermissionsAsync()
 
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
-    })();
-  });
+    if(status !== 'granted'){
+        Alert.alert('Ops...', 'Precisamos da sua permissão para acessar a localização.')
+        return
+    }
 
-  let text = 'Waiting..';
-  if (errorMsg) {
-    text = errorMsg;
-  } else if (location) {
-    text = JSON.stringify(location);
+    const location = await Location.getCurrentPositionAsync({
+        accuracy:Location.Accuracy.High
+    })
+
+    const { latitude, longitude } = location.coords
+
+    setInitialPosition([
+        latitude,
+        longitude
+    ])
   }
+
+  //carrega posição inicial
+  useEffect(() => {
+    //pede permissões ao usuário para acessar a localização
+    loadPosition()
+  }, [])
+
+  useEffect(() => {
+    api.get(`https://api.openweathermap.org/data/2.5/onecall?lat=${initialPosition[0]}&lon=${initialPosition[1]}&cnt=5&appid=c5b2c1dcd34bd22371bc8813868dddf6&exclude=current,minutely,hourly&units=metric&lang=pt_br`)
+      .then(response => {
+        //dia e hora atual
+        //const day = capitalize(moment.utc(response.data.daily[0].dt*1000).locale('pt-br').format('ddd')) //pega o dia da semana
+        const hour = Number(moment.utc(response.data.daily[0].dt*1000).locale('pt-br').format('HH')) //pega a hora atual
+        console.log(`hora ${hour}`)
+
+        const daily = response.data.daily
+
+        const days = daily.map(dayResponse => {
+          //pega o dia atual
+          const day = moment.utc(dayResponse.dt*1000).locale('pt-br').format('ddd') //pega o dia da semana
+          
+          let temperature = 0
+          
+          //pega a temperatura
+          if(hour >= 6 && hour <= 18){ //dia
+            temperature = dayResponse.feels_like.day
+
+          }else{ //noite
+            temperature = dayResponse.feels_like.night
+          }
+
+          return { 
+            day,
+            temperature
+          }
+        })
+
+        //seta os dias atuais
+        setDays(days)
+        
+      })
+  }, []) //chama quando a posição inicial é alterada
 
   function handleNavigationQuotation() {
     const weightFloat = parseFloat(weight.replace('.', '').replace(',','.'))
@@ -60,102 +132,94 @@ const Home = () => {
     }    
   }
 
+
+  
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS == "ios" ? "padding" : "height"}
       style={{ flex: 1 }}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.container}>
-            <Text>{text}</Text>
-          <View style={styles.climate}>
-            <View style={styles.headerClimate}>
-              <Text style={styles.textClimate}>Clima</Text>
-              <Text style={styles.cityClimate}>São Mateus - ES</Text>
-            </View>
-            <View style={styles.bodyClimate}>
-              <View style={styles.temperature}>
-                <Text style={styles.textTemperature}>Dom</Text>
-                <Text style={styles.valueTemperature}>27º C</Text>
+            <View style={styles.climate}>
+              <View style={styles.headerClimate}>
+                <Text style={styles.textClimate}>Clima</Text>
+                <Text style={styles.cityClimate}>São Mateus - ES</Text>
               </View>
-              <View style={styles.week}>
-                <View style={styles.day}>
-                  <Text style={styles.textDay}>seg</Text>
-                  <Text style={styles.temperatureDay}>28ºC</Text>
+              <View style={styles.bodyClimate}>
+                <View style={styles.temperature}>
+                  <Text style={styles.textTemperature}>{days && capitalize(days[0].day)}</Text>
+                  <Text style={styles.valueTemperature}>{days && Math.floor(days[0].temperature)}ºC</Text>
                 </View>
-                <View style={styles.day}>
-                  <Text style={styles.textDay}>ter</Text>
-                  <Text style={styles.temperatureDay}>29ºC</Text>
-                </View>
-                <View style={styles.day}>
-                  <Text style={styles.textDay}>qua</Text>
-                  <Text style={styles.temperatureDay}>18ºC</Text>
-                </View>
-                <View style={styles.day}>
-                  <Text style={styles.textDay}>qui</Text>
-                  <Text style={styles.temperatureDay}>28ºC</Text>
-                </View>
-                <View style={styles.day}>
-                  <Text style={styles.textDay}>sex</Text>
-                  <Text style={styles.temperatureDay}>28ºC</Text>
-                </View>
-                <View style={styles.day}>
-                  <Text style={styles.textDay}>sáb</Text>
-                  <Text style={styles.temperatureDay}>dom</Text>
+                <View style={styles.week}>
+                  {
+                  days &&
+                  days.map(day => {
+                    if(day.day !== days[0].day){
+                      return (
+                        <View
+                          key={day.day}
+                          style={styles.day}>
+                          <Text style={styles.textDay}>{day.day}</Text>
+                          <Text style={styles.temperatureDay}>{Math.floor(day.temperature)}ºC</Text>
+                        </View>
+                      )
+                    }
+                  })} 
                 </View>
               </View>
             </View>
+            <View style={styles.price}>
+              <View style={styles.titlePrice}>
+                <Text style={styles.textTitle}>Preço da Pimenta hoje</Text>
+              </View>
+              <View style={styles.bodyPrice}>
+                <Text style={styles.dolar}>R$</Text>
+                <Text style={styles.valuePrice}>{chiliValue}</Text>
+              </View>
+              <View style={styles.footerPrice}>
+                <Text style={styles.textFooter}>Fonte: BRAZIL ASTA 570 - atualizado em 2006/2020 às 20:30</Text>
+              </View>
+            </View>
+            <View style={styles.quotation}>
+              <View style={styles.input}>
+                <TextInputMask
+                  placeholder="Informe o peso..."
+                  style={styles.inputQuot}
+                  keyboardType='numeric'
+                  autoCorrect={false}
+                  type={'money'}
+                  options={{
+                    precision: 2,
+                    separator: ',',
+                    delimiter: '.',
+                    unit: '',
+                    suffixUnit: ''
+                  }}
+                  value={String(weight)}
+                  onChangeText={text => {
+                    setWeight(text)
+                  }}
+                />                
+                <Text style={styles.inputType}>kg</Text>
+              </View>
+              <View style={styles.button}>
+                <RectButton
+                  style={styles.buttonQuot}
+                  onPress={handleNavigationQuotation} >
+                  <View style={styles.buttonIcon}>
+                      <Text>
+                          <Icon
+                            name='monetization-on'
+                            color='#fff'
+                            size={20} />
+                      </Text>
+                  </View>
+                  <Text style={styles.buttonText}>Fazer Cotação</Text>
+                </RectButton>
+              </View>
+            </View>
           </View>
-          <View style={styles.price}>
-            <View style={styles.titlePrice}>
-              <Text style={styles.textTitle}>Preço da Pimenta hoje</Text>
-            </View>
-            <View style={styles.bodyPrice}>
-              <Text style={styles.dolar}>R$</Text>
-              <Text style={styles.valuePrice}>{chiliValue}</Text>
-            </View>
-            <View style={styles.footerPrice}>
-              <Text style={styles.textFooter}>Fonte: BRAZIL ASTA 570 - atualizado em 2006/2020 às 20:30</Text>
-            </View>
-          </View>
-          <View style={styles.quotation}>
-            <View style={styles.input}>
-              <TextInputMask
-                placeholder="Informe o peso..."
-                style={styles.inputQuot}
-                keyboardType='numeric'
-                autoCorrect={false}
-                type={'money'}
-                options={{
-                  precision: 2,
-                  separator: ',',
-                  delimiter: '.',
-                  unit: '',
-                  suffixUnit: ''
-                }}
-                value={String(weight)}
-                onChangeText={text => {
-                  setWeight(text)
-                }}
-              />                
-              <Text style={styles.inputType}>kg</Text>
-            </View>
-            <View style={styles.button}>
-              <RectButton
-                style={styles.buttonQuot}
-                onPress={handleNavigationQuotation} >
-                <View style={styles.buttonIcon}>
-                    <Text>
-                        <Icon
-                          name='monetization-on'
-                          color='#fff'
-                          size={20} />
-                    </Text>
-                </View>
-                <Text style={styles.buttonText}>Fazer Cotação</Text>
-              </RectButton>
-            </View>
-          </View>
-        </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>      
   )
