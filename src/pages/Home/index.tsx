@@ -1,138 +1,164 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   Dimensions,
-  TextInput,
   Platform,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert
 } from 'react-native'
-import { AppLoading } from 'expo'
+import * as Location from 'expo-location';
+
 import { RectButton } from 'react-native-gesture-handler'
 import { MaterialIcons as Icon } from '@expo/vector-icons'
 import { TextInputMask } from 'react-native-masked-text'
-
-import {
-  useFonts,
-  Ubuntu_300Light,
-  Ubuntu_500Medium,
-  Ubuntu_700Bold } from '@expo-google-fonts/ubuntu'
+import { useNavigation } from '@react-navigation/native' //para navegar através do botão
 
 const width = Dimensions.get('window').width
 
 const Home = () => {
+  //dados da localização do usuário
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+
   const [chiliValue, setChiliValue] = useState<string>('200,99')
   const [weight, setWeight] = useState<string>('0,00')
-  const [fontsLoaded] = useFonts({
-    Ubuntu_300Light,
-    Ubuntu_500Medium,
-    Ubuntu_700Bold
-  })
+  
+  const navigation = useNavigation()
 
-  if(!fontsLoaded){ //caso não tenha carregado as fontes ainda
-    return <AppLoading />
-  }else{
-    return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS == "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}>
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.container}>
-            <View style={styles.climate}>
-              <View style={styles.headerClimate}>
-                <Text style={styles.textClimate}>Clima</Text>
-                <Text style={styles.cityClimate}>São Mateus - ES</Text>
-              </View>
-              <View style={styles.bodyClimate}>
-                <View style={styles.temperature}>
-                  <Text style={styles.textTemperature}>Dom</Text>
-                  <Text style={styles.valueTemperature}>27º C</Text>
-                </View>
-                <View style={styles.week}>
-                  <View style={styles.day}>
-                    <Text style={styles.textDay}>seg</Text>
-                    <Text style={styles.temperatureDay}>28ºC</Text>
-                  </View>
-                  <View style={styles.day}>
-                    <Text style={styles.textDay}>ter</Text>
-                    <Text style={styles.temperatureDay}>29ºC</Text>
-                  </View>
-                  <View style={styles.day}>
-                    <Text style={styles.textDay}>qua</Text>
-                    <Text style={styles.temperatureDay}>18ºC</Text>
-                  </View>
-                  <View style={styles.day}>
-                    <Text style={styles.textDay}>qui</Text>
-                    <Text style={styles.temperatureDay}>28ºC</Text>
-                  </View>
-                  <View style={styles.day}>
-                    <Text style={styles.textDay}>sex</Text>
-                    <Text style={styles.temperatureDay}>28ºC</Text>
-                  </View>
-                  <View style={styles.day}>
-                    <Text style={styles.textDay}>sáb</Text>
-                    <Text style={styles.temperatureDay}>dom</Text>
-                  </View>
-                </View>
-              </View>
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
+    })();
+  });
+
+  let text = 'Waiting..';
+  if (errorMsg) {
+    text = errorMsg;
+  } else if (location) {
+    text = JSON.stringify(location);
+  }
+
+  function handleNavigationQuotation() {
+    const weightFloat = parseFloat(weight.replace('.', '').replace(',','.'))
+    const chiliFloat = parseFloat(chiliValue.replace('.', '').replace(',','.'))
+
+    if(weightFloat > 0.0){
+      navigation.navigate('Quotation', {
+        weight: weightFloat,
+        chiliValue: chiliFloat
+      })
+    }    
+  }
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS == "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.container}>
+            <Text>{text}</Text>
+          <View style={styles.climate}>
+            <View style={styles.headerClimate}>
+              <Text style={styles.textClimate}>Clima</Text>
+              <Text style={styles.cityClimate}>São Mateus - ES</Text>
             </View>
-            <View style={styles.price}>
-              <View style={styles.titlePrice}>
-                <Text style={styles.textTitle}>Preço da Pimenta hoje</Text>
+            <View style={styles.bodyClimate}>
+              <View style={styles.temperature}>
+                <Text style={styles.textTemperature}>Dom</Text>
+                <Text style={styles.valueTemperature}>27º C</Text>
               </View>
-              <View style={styles.bodyPrice}>
-                <Text style={styles.dolar}>R$</Text>
-                <Text style={styles.valuePrice}>{chiliValue}</Text>
-              </View>
-              <View style={styles.footerPrice}>
-                <Text style={styles.textFooter}>Fonte: BRAZIL ASTA 570 - atualizado em 2006/2020 às 20:30</Text>
-              </View>
-            </View>
-            <View style={styles.quotation}>
-              <View style={styles.input}>
-                <TextInputMask
-                  placeholder="Informe o peso..."
-                  style={styles.inputQuot}
-                  keyboardType='numeric'
-                  autoCorrect={false}
-                  type={'money'}
-                  options={{
-                    precision: 3,
-                    separator: ',',
-                    delimiter: '.',
-                    unit: '',
-                    suffixUnit: ''
-                  }}
-                  value={String(weight)}
-                  onChangeText={text => {
-                    setWeight(text)
-                  }}
-                />                
-                <Text style={styles.inputType}>kg</Text>
-              </View>
-              <View style={styles.button}>
-                <RectButton style={styles.buttonQuot} onPress={() => {}} >
-                    <View style={styles.buttonIcon}>
-                        <Text>
-                            <Icon
-                              name='monetization-on'
-                              color='#fff'
-                              size={20} />
-                        </Text>
-                    </View>
-                    <Text style={styles.buttonText}>Fazer Cotação</Text>
-                </RectButton>
+              <View style={styles.week}>
+                <View style={styles.day}>
+                  <Text style={styles.textDay}>seg</Text>
+                  <Text style={styles.temperatureDay}>28ºC</Text>
+                </View>
+                <View style={styles.day}>
+                  <Text style={styles.textDay}>ter</Text>
+                  <Text style={styles.temperatureDay}>29ºC</Text>
+                </View>
+                <View style={styles.day}>
+                  <Text style={styles.textDay}>qua</Text>
+                  <Text style={styles.temperatureDay}>18ºC</Text>
+                </View>
+                <View style={styles.day}>
+                  <Text style={styles.textDay}>qui</Text>
+                  <Text style={styles.temperatureDay}>28ºC</Text>
+                </View>
+                <View style={styles.day}>
+                  <Text style={styles.textDay}>sex</Text>
+                  <Text style={styles.temperatureDay}>28ºC</Text>
+                </View>
+                <View style={styles.day}>
+                  <Text style={styles.textDay}>sáb</Text>
+                  <Text style={styles.temperatureDay}>dom</Text>
+                </View>
               </View>
             </View>
           </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-        
-    )
-  } 
+          <View style={styles.price}>
+            <View style={styles.titlePrice}>
+              <Text style={styles.textTitle}>Preço da Pimenta hoje</Text>
+            </View>
+            <View style={styles.bodyPrice}>
+              <Text style={styles.dolar}>R$</Text>
+              <Text style={styles.valuePrice}>{chiliValue}</Text>
+            </View>
+            <View style={styles.footerPrice}>
+              <Text style={styles.textFooter}>Fonte: BRAZIL ASTA 570 - atualizado em 2006/2020 às 20:30</Text>
+            </View>
+          </View>
+          <View style={styles.quotation}>
+            <View style={styles.input}>
+              <TextInputMask
+                placeholder="Informe o peso..."
+                style={styles.inputQuot}
+                keyboardType='numeric'
+                autoCorrect={false}
+                type={'money'}
+                options={{
+                  precision: 2,
+                  separator: ',',
+                  delimiter: '.',
+                  unit: '',
+                  suffixUnit: ''
+                }}
+                value={String(weight)}
+                onChangeText={text => {
+                  setWeight(text)
+                }}
+              />                
+              <Text style={styles.inputType}>kg</Text>
+            </View>
+            <View style={styles.button}>
+              <RectButton
+                style={styles.buttonQuot}
+                onPress={handleNavigationQuotation} >
+                <View style={styles.buttonIcon}>
+                    <Text>
+                        <Icon
+                          name='monetization-on'
+                          color='#fff'
+                          size={20} />
+                    </Text>
+                </View>
+                <Text style={styles.buttonText}>Fazer Cotação</Text>
+              </RectButton>
+            </View>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>      
+  )
 }
 
 const styles = StyleSheet.create({
