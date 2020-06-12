@@ -8,7 +8,8 @@ import {
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
-  Alert
+  Alert,
+  ImageBackground
 } from 'react-native'
 import * as Location from 'expo-location'
 
@@ -36,6 +37,7 @@ interface Climate {
   temperature: number,
   hour: number
 }
+
 
 const Home = () => {
   //dados do clima
@@ -142,32 +144,45 @@ const Home = () => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.container}>
             <View style={styles.climate}>
-              <View style={styles.headerClimate}>
-                <Text style={styles.textClimate}>Clima</Text>
-                <Text style={styles.cityClimate}>São Mateus - ES</Text>
-              </View>
-              <View style={styles.bodyClimate}>
-                <View style={styles.temperature}>
-                  <Text style={styles.textTemperature}>{days && capitalize(days[0].day)}</Text>
-                  <Text style={styles.valueTemperature}>{days && Math.floor(days[0].temperature)}ºC</Text>
+              <ImageBackground
+                  source={require('../../../assets/day.jpg')}
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    padding: 20
+                  }}
+                  imageStyle={{
+                    resizeMode: "cover",
+                    borderRadius: 30, 
+                  }}>
+                <View style={styles.headerClimate}>
+                  <Text style={styles.textClimate}>Clima</Text>
+                  <Text style={styles.cityClimate}>São Mateus - ES</Text>
                 </View>
-                <View style={styles.week}>
-                  {
-                  days &&
-                  days.map(day => {
-                    if(day.day !== days[0].day){
-                      return (
-                        <View
-                          key={day.day}
-                          style={styles.day}>
-                          <Text style={styles.textDay}>{day.day}</Text>
-                          <Text style={styles.temperatureDay}>{Math.floor(day.temperature)}ºC</Text>
-                        </View>
-                      )
-                    }
-                  })} 
+                <View style={styles.bodyClimate}>
+                  <View style={styles.temperature}>
+                    <Text style={styles.textTemperature}>{days && capitalize(days[0].day)}</Text>
+                    <Text style={styles.valueTemperature}>{days && Math.floor(days[0].temperature)}ºC</Text>
+                  </View>
+                  <View style={styles.week}>
+                    {
+                    days &&
+                    days.map(day => {
+                      if(day.day !== days[0].day){
+                        return (
+                          <View
+                            key={day.day}
+                            style={styles.day}>
+                            <Text style={styles.textDay}>{day.day}</Text>
+                            <Text style={styles.temperatureDay}>{Math.floor(day.temperature)}ºC</Text>
+                          </View>
+                        )
+                      }
+                    })} 
+                  </View>
                 </View>
-              </View>
+              </ImageBackground>
+              
             </View>
             <View style={styles.price}>
               <View style={styles.titlePrice}>
@@ -234,7 +249,7 @@ const styles = StyleSheet.create({
   climate: {
     width: width * 0.9,
     height: 130,
-    padding: 20,
+    // padding: 20,
     backgroundColor: '#fff',
     borderRadius: 30
   },
@@ -273,14 +288,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   textClimate: {
-    fontFamily: 'Ubuntu_300Light'
+    fontFamily: 'Ubuntu_300Light',
+    color: '#fff'
   },
   cityClimate: {
     marginLeft: 5,
-    fontFamily: 'Ubuntu_500Medium'
+    fontFamily: 'Ubuntu_500Medium',
+    color: '#fff'
   },
   temperature: {
-    marginTop: 5
+    marginTop: 5,
   },
   week: {
     paddingTop: 25,
@@ -294,18 +311,21 @@ const styles = StyleSheet.create({
   },
   textDay: {
     fontSize: 11,
-    fontFamily: 'Ubuntu_300Light'
+    fontFamily: 'Ubuntu_300Light',
+    color: '#fff'
   },
   temperatureDay: {
     fontSize: 11,
-    fontFamily: 'Ubuntu_300Light'
+    fontFamily: 'Ubuntu_300Light',
+    color: '#fff'
   },
   valueTemperature: {
     fontFamily: 'Ubuntu_500Medium',
-    fontSize: 25
+    fontSize: 25,
+    color: '#fff'
   },
   textTemperature: {
-
+    color: '#fff'
   },
   titlePrice: {
     alignItems: 'center',
