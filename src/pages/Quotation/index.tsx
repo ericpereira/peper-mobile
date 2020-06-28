@@ -12,14 +12,16 @@ import {
   TouchableHighlight
 } from 'react-native'
 
-import { RectButton } from 'react-native-gesture-handler'
+import { RectButton, TouchableOpacity } from 'react-native-gesture-handler'
 import { MaterialIcons as Icon } from '@expo/vector-icons'
 import { TextInputMask } from 'react-native-masked-text'
-import { useNavigation, useRoute } from '@react-navigation/native' 
+import { useNavigation, useRoute } from '@react-navigation/native'
+import Logo from "../../../assets/pimenta.svg"
 
 interface Params {
   chiliValue: number,
-  weight: number
+  weight: number,
+  updateDate: string,
 }
 
 const width = Dimensions.get('window').width
@@ -56,6 +58,7 @@ const Quotation = () => {
   
   //peso inicial
   const [weight, setWeight] = useState<string>('0,00')
+  
 
   function handleBack() {
     navigation.goBack()
@@ -75,16 +78,17 @@ const Quotation = () => {
       style={{ flex: 1 }}>
       <TouchableWithoutFeedback style={{ flex: 1 }} onPress={Keyboard.dismiss}>      
         <View style={{ flex: 1 }}>
-          <TouchableHighlight
+          <TouchableOpacity
             style={styles.buttonBack}
             onPress={handleBack}>
             <Icon              
               name='arrow-back'
               color='#B0B0B0'
               size={24} />
-          </TouchableHighlight>
+          </TouchableOpacity>
           
           <View style={styles.container}>
+            <Logo width={120} height={80} />
             <View style={styles.quotPriceHeader}>
               <Text style={styles.quotTitleText}>Preço Cotado</Text>
               <View style={styles.quotPriceBody}>
@@ -107,7 +111,7 @@ const Quotation = () => {
                 <Text style={styles.valuePrice}>{quotationValue}</Text>
               </View>
               <View style={styles.footerPrice}>
-                <Text style={styles.textFooter}>Fonte: BRAZIL ASTA 570 - atualizado em 2006/2020 às 20:30</Text>
+                <Text style={styles.textFooter}>Fonte: BRAZIL ASTA 570 - atualizado em {routeParams.updateDate}</Text>
               </View>
             </View>
             <View style={styles.quotation}>

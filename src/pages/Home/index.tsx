@@ -12,11 +12,12 @@ import {
   ImageBackground
 } from 'react-native'
 import * as Location from 'expo-location'
-
+import Logo from "../../../assets/pimenta.svg"
+ 
 //para converter a data de utc para pt-br
 import moment from 'moment'
 import 'moment/locale/pt-br'
-
+ 
 import { RectButton } from 'react-native-gesture-handler'
 import { MaterialIcons as Icon } from '@expo/vector-icons'
 import { TextInputMask } from 'react-native-masked-text'
@@ -47,14 +48,20 @@ const Home = () => {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  const [chiliValue, setChiliValue] = useState<string>('200,99')
+  const [chiliValue, setChiliValue] = useState<string>('0,00')
   const [weight, setWeight] = useState<string>('0,00')
+  const [updateDate, setUpdateDate] = useState<string>('00/00/0000')
+
 
   //posição inicial
   const [initialPosition, setInitialPosition] = useState<[number, number]>([0, 0])
 
   const api = axios.create({
       baseURL: 'http://192.168.1.9:3333'
+  })
+
+  const peperApi = axios.create({ //nos testes tem que lembrar de colocar o ip da máquina hospedeira, no caso o ip do emulador
+    baseURL: 'http://192.168.1.3:4000'
   })
   
   const navigation = useNavigation()
@@ -80,6 +87,15 @@ const Home = () => {
     ])
   }
 
+  //carrega o preço inicial
+  useEffect(() => {
+    peperApi.get('price/lastprice')
+      .then(response => {    
+        setUpdateDate(moment().format('LLL'))
+        setChiliValue(response.data.price.price)
+      }).catch(error => console.log(error))
+  }, [])
+
   //carrega posição inicial
   useEffect(() => {
     //pede permissões ao usuário para acessar a localização
@@ -92,7 +108,7 @@ const Home = () => {
         //dia e hora atual
         //const day = capitalize(moment.utc(response.data.daily[0].dt*1000).locale('pt-br').format('ddd')) //pega o dia da semana
         const hour = Number(moment.utc(response.data.daily[0].dt*1000).locale('pt-br').format('HH')) //pega a hora atual
-        console.log(`hora ${hour}`)
+        //console.log(`hora ${hour}`)
 
         const daily = response.data.daily
 
@@ -129,7 +145,8 @@ const Home = () => {
     if(weightFloat > 0.0){
       navigation.navigate('Quotation', {
         weight: weightFloat,
-        chiliValue: chiliFloat
+        chiliValue: chiliFloat,
+        updateDate
       })
     }    
   }
@@ -143,6 +160,7 @@ const Home = () => {
       style={{ flex: 1 }}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.container}>
+            <Logo width={120} height={80} /> 
             <View style={styles.climate}>
               <ImageBackground
                   source={require('../../../assets/day.jpg')}
@@ -157,7 +175,7 @@ const Home = () => {
                   }}>
                 <View style={styles.headerClimate}>
                   <Text style={styles.textClimate}>Clima</Text>
-                  <Text style={styles.cityClimate}>São Mateus - ES</Text>
+                  {/* <Text style={styles.cityClimate}>São Mateus - ES</Text> */}
                 </View>
                 <View style={styles.bodyClimate}>
                   <View style={styles.temperature}>
@@ -193,7 +211,7 @@ const Home = () => {
                 <Text style={styles.valuePrice}>{chiliValue}</Text>
               </View>
               <View style={styles.footerPrice}>
-                <Text style={styles.textFooter}>Fonte: BRAZIL ASTA 570 - atualizado em 2006/2020 às 20:30</Text>
+                  <Text style={styles.textFooter}>Fonte: BRAZIL ASTA 570 - atualizado em {updateDate}</Text>
               </View>
             </View>
             <View style={styles.quotation}>
